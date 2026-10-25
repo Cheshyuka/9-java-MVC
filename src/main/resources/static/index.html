@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Список покупок</title>
+</head>
+<body>
+
+<h1>Список покупок</h1>
+
+<div>
+    <input type="text" id="itemName" placeholder="Название товара">
+    <button onclick="addItem()">Добавить</button>
+</div>
+
+<br>
+
+<ul id="shoppingList">
+</ul>
+
+<script>
+    const API_URL = '/api/items';
+
+    async function loadItems() {
+        const response = await fetch(API_URL);
+        const items = await response.json();
+        const list = document.getElementById('shoppingList');
+        list.innerHTML = '';
+
+        items.forEach(item => {
+            const li = document.createElement('li');
+
+            if (item.purchased) {
+                li.style.textDecoration = 'line-through';
+            }
+
+            const textNode = document.createTextNode(item.name + ' ');
+            li.appendChild(textNode);
+
+            const toggleBtn = document.createElement('button');
+            toggleBtn.textContent = item.purchased ? 'Вернуть' : 'Куплено';
+            toggleBtn.onclick = () => togglePurchased(item.id);
+            li.appendChild(toggleBtn);
+
+            li.appendChild(document.createTextNode(' '));
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Удалить';
+            deleteBtn.onclick = () => deleteItem(item.id);
+            li.appendChild(deleteBtn);
+
+            list.appendChild(li);
+        });
+    }
+
+    async function addItem() {
+        const input = document.getElementById('itemName');
+        const name = input.value.trim();
+        if (!name) return;
+
+        await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name })
+        });
+
+        input.value = '';
+        loadItems();
+    }
+
+    async function deleteItem(id) {
+        await fetch(`${API_URL}/${id}`, {
+            method: 'DELETE'
+        });
+        loadItems();
+    }
+
+    async function togglePurchased(id) {
+        await fetch(`${API_URL}/${id}/toggle`, {
+            method: 'PATCH'
+        });
+        loadItems();
+    }
+
+    document.addEventListener('DOMContentLoaded', loadItems);
+</script>
+
+</body>
+</html>
